@@ -2,6 +2,11 @@
  * soduku.c
  */
 
+// always turn on asserts, for now
+#ifndef DEBUG
+#define DEBUG
+#endif
+
 #include "myassert.h"
 #include <string.h>
 #include <stdio.h>
@@ -15,9 +20,13 @@ enum
 	};
 
 typedef unsigned char digit;
+assert_compile(sizeof(digit) == 1);
+
 typedef digit grid[digit_count];
 
 typedef unsigned short int digit_set;
+assert_compile(sizeof(digit_set) == 2);
+
 const digit_set all_digits = (1 << grid_size) - 1;
 
 typedef enum
@@ -38,6 +47,11 @@ int col_from_index(int i)
 	return i % grid_size;
 	}
 
+int index_from_coords(int row, int col)
+	{
+	return row * grid_size + col;
+	}
+
 digit_set row_digits_used(grid g, int row)
 	{
 	const int start = row * grid_size;
@@ -45,7 +59,7 @@ digit_set row_digits_used(grid g, int row)
 	digit_set result = 0;
 	for (int i = start ; i < end ; ++i)
 		result |= 1 << g[i];
-	return result;
+	return result & ~1;
 	}
 
 digit_set col_digits_used(grid g, int col)
@@ -55,7 +69,7 @@ digit_set col_digits_used(grid g, int col)
 	digit_set result = 0;
 	for (int i = start ; i < end ; i += grid_size)
 		result |= 1 << g[i];
-	return result;
+	return result & ~1;
 	}
 
 digit_set square_digits_used(grid g, int row, int col)
@@ -67,14 +81,14 @@ digit_set square_digits_used(grid g, int row, int col)
 	digit_set result = 0;
 	for (int i = start ; i < end ; i += grid_size)
 		result |= 1 << g[i] | 1 << g[i + 1] | 1 << g[i + 2];
-	return result;
+	return result & ~1;
 	}
 
-int get_set_size(digit_set s)
+int digit_set_size(digit_set s)
 	{
 	// todo: better way
 	int result = 0;
-	for (int i = 0 ; i < digit_count ; ++i)
+	for (int i = 1 ; i <= grid_size ; ++i)
 		{
 		if (s & (1 << i))
 			++result;
@@ -85,8 +99,8 @@ int get_set_size(digit_set s)
 bool solve(grid g)
 	{
 	int index = -1;
-	digit_set possibles;
-	int set_size;
+	digit_set possibles = 0;
+	int set_size = 0;
 	
 	for (int i = 0 ; i < digit_count ; ++i)
 		{
@@ -99,7 +113,7 @@ bool solve(grid g)
 				~(row_digits_used(g, row) |
 				  col_digits_used(g, col) |
 				  square_digits_used(g, row, col));
-			int s = get_set_size(p);
+			int s = digit_set_size(p);
 
 			if (index == -1 || s < set_size)
 				{
@@ -115,7 +129,7 @@ bool solve(grid g)
 	if (index == -1)
 		return true;
 
-	for (int i = 0 ; i < digit_count ; ++i)
+	for (int i = 1 ; i <= grid_size ; ++i)
 		{
 		if (possibles & (1 << i))
 			{
@@ -175,15 +189,25 @@ err run_solver()
 		buffer[digit_count] = '\0';
 		
 		grid g;
-		parse_input(buffer, g);
-		format_output(g, buffer);
-		printf("%s\n", buffer);
+		err r = parse_input(buffer, g);
+		if (r != ERR_NONE)
+			return r;
+		if (solve(g))
+			{
+			format_output(g, buffer);
+			printf("%s\n", buffer);
+			}
+		else
+			printf("failed to solve input\n");
 		}
 	return ERR_NONE;
 	}
 
 err run_tests()
 	{
+	printf("Running tests...\n");
+	
+	printf("  test i/o\n");
 	grid g;
 	char *input = "0123456789......................................................................z";
 	assert_equal(ERR_BAD_INPUT_CHAR, parse_input(input, g));
@@ -196,17 +220,45 @@ err run_tests()
 		digit e = i <= 9 ? i : 0;
 		assert_equal(e, g[i]);
 		}
-
 	char output[digit_count + 1];
 	format_output(g, output);
 	assert_equal(0, strcmp(input, output));
+
+	printf("  test coordinates\n");
+	assert_equal(0, row_from_index(8));
+	assert_equal(1, row_from_index(9));
+	assert_equal(0, col_from_index(0));
+	assert_equal(1, col_from_index(1));
+	assert_equal(0, index_from_coords(0, 0));
+	assert_equal(80, index_from_coords(8, 8));
 	
+	for (int i = 0 ; i < digit_count ; ++i)
+		{
+		assert_equal(i, index_from_coords(row_from_index(i),
+										  col_from_index(i)));
+		}
+		
+	printf("  test digit sets\n");
+	digit_set d = 0;
+	assert_equal(0, digit_set_size(d));
+	for (int i = 1 ; i <= grid_size ; ++i)
+		{
+		d |= 1 << i;
+		assert_equal(i, digit_set_size(d));
+		}
+	
+	memset(g, 0, sizeof(g));
+	assert_equal(0, row_digits_used(g, 0));
+	assert_equal(0, col_digits_used(g, 0));
+	assert_equal(0, square_digits_used(g, 0, 0));
+	
+	printf("All tests passed\n");
 	return ERR_NONE;
 	}
 
 int main(int argc, char* argv[])
 	{
-	err r;
+	err r = ERR_NONE;
 	if (argc == 2 && strcmp(argv[1], "-t") == 0)
 		r = run_tests();
 	else if (argc == 1)
@@ -224,6 +276,8 @@ int main(int argc, char* argv[])
 			die("input digit out of range, expected 0-9 or '.'");
 		case ERR_BAD_LINE_LENGTH:
 			die("bad input, expected line length of %d characters", digit_count);
+		default:
+			assert(0);
 		}
 	
 	return 0;
