@@ -88,14 +88,17 @@ digit_set col_digits_used(grid g, unsigned int col)
 	return result & ~1;
 	}
 
+#define FOR_SQUARE_INDEX(row, col, i)                             \
+	const int square_start =                                      \
+		(row - row % square_size) * grid_size +                   \
+		(col - col % square_size);                                \
+	const int square_end = square_start + grid_size * 3;          \
+	for (int i = square_start ; i < square_end ; i += grid_size)
+
 digit_set square_digits_used(grid g, unsigned int row, unsigned int col)
 	{
-	row -= row % square_size;
-	col -= col % square_size;
-	const int start = row * grid_size + col;
-	const int end = start + grid_size * 3;
 	digit_set result = 0;
-	for (int i = start ; i < end ; i += grid_size)
+	FOR_SQUARE_INDEX(row, col, i)
 		result |= 1 << g[i] | 1 << g[i + 1] | 1 << g[i + 2];
 	return result & ~1;
 	}
@@ -196,8 +199,17 @@ bool valid_solution(grid g)
 		if (!valid_counts(counts))
 			return false;
 
-		// todo: square
-		
+		memset(counts, 0, sizeof(counts));		
+		FOR_SQUARE_INDEX(i / square_size, i % square_size, j)
+			{
+			for (int k = 0 ; k < 3 ; ++k)
+				{
+				digit d = g[j + k];
+				if (d == 0 || d > grid_size)
+					return false;
+				++counts[d];
+				}
+			}
 		}
 	return true;
 	}
@@ -241,7 +253,7 @@ err parse_and_solve(const char* input)
 	if (solve(g))
 		{
 		assert(valid_solution(g));
-		char buffer[grid_size + 1];
+		char buffer[digit_count + 1];
 		format_output(g, buffer);
 		printf("%s\n", buffer);
 		}
@@ -277,17 +289,17 @@ err run_tests()
 	
 	printf("  test i/o\n");
 	grid g;
-	char *input = "0123456789......................................................................z";
-	assert_equal(ERR_BAD_INPUT_CHAR, parse_input(input, g));
-	input[0] = '.';
-	assert_equal(ERR_BAD_INPUT_CHAR, parse_input(input, g));
-	input[80] = '.';
-	assert_equal(ERR_NONE, parse_input(input, g));
+	char input[digit_count + 1];
 	for (int i = 0 ; i < digit_count ; ++i)
+		input[i] = ' ' + i;
+	input[digit_count] = 0;
+    for (int i = 0 ; i < digit_count ; ++i)
 		{
-		digit e = i <= 9 ? i : 0;
-		assert_equal(e, g[i]);
+		assert_equal(ERR_BAD_INPUT_CHAR, parse_input(input, g));
+		if (input[i] < '1' || input[i] > '9')
+			input[i] = '.';
 		}
+	assert_equal(ERR_NONE, parse_input(input, g));	
 	char output[digit_count + 1];
 	format_output(g, output);
 	assert_equal(0, strcmp(input, output));
@@ -298,8 +310,7 @@ err run_tests()
 	assert_equal(0, col_from_index(0));
 	assert_equal(1, col_from_index(1));
 	assert_equal(0, index_from_coords(0, 0));
-	assert_equal(80, index_from_coords(8, 8));
-	
+	assert_equal(80, index_from_coords(8, 8));	
 	for (int i = 0 ; i < digit_count ; ++i)
 		{
 		assert_equal(i, index_from_coords(row_from_index(i),
@@ -316,12 +327,11 @@ err run_tests()
 		}
 	
 	printf("  test calculating digit sets for row/column/square\n");
-
 	memset(g, 0, sizeof(g));
 	assert_equal(0, row_digits_used(g, 0));
 	assert_equal(0, col_digits_used(g, 0));
 	assert_equal(0, square_digits_used(g, 0, 0));
-
+	
 	for (int i = 0 ; i < grid_size ; ++i)
 		g[index_from_coords(i, 0)] = i + 1;
 	for (int i = 0 ; i < grid_size ; ++i)
@@ -348,6 +358,8 @@ err run_tests()
 		int es = sr == 0 ? (14 << sc) : 0;
 		assert_equal(es, square_digits_used(g, sr, sc));
 		}
+
+	// todo: test valid_solution
 
 	printf("  test solving sudoku\n");
 	const char* i1 = ".94...13..............76..2.8..1.....32.........2...6.....5.4.......8..7..63.4..8";
