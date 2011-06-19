@@ -33,7 +33,7 @@ all: sudoku sudoku-debug sudoku-prof
 
 .PHONY: test
 test: sudoku-debug
-	gdb -batch -return-child-result -command=debug.commands --args ./sudoku-debug -t
+	gdb -batch -command=debug.commands --args ./sudoku-debug -t
 
 .PHONY: clean
 clean:
