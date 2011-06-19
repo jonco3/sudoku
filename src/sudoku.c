@@ -181,34 +181,29 @@ bool valid_solution(grid g)
 		FOR_ROW_INDEX(i, j)
 			{
 			digit d = g[j];
-			if (d == 0 || d > grid_size)
-				return false;
+			assert(d >= 1 && d <= grid_size);
 			++counts[d];
 			}
 		if (!valid_counts(counts))
 			return false;
+		}
 		
+	for (int i = 0 ; i < grid_size ; ++i)
+		{
 		memset(counts, 0, sizeof(counts));		
 		FOR_COL_INDEX(i, j)
-			{
-			digit d = g[j];
-			if (d == 0 || d > grid_size)
-				return false;
-			++counts[d];
-			}
+			++counts[g[j]];
 		if (!valid_counts(counts))
 			return false;
-
+		}
+	
+	for (int i = 0 ; i < grid_size ; ++i)
+		{
 		memset(counts, 0, sizeof(counts));		
 		FOR_SQUARE_INDEX(i / square_size, i % square_size, j)
 			{
 			for (int k = 0 ; k < 3 ; ++k)
-				{
-				digit d = g[j + k];
-				if (d == 0 || d > grid_size)
-					return false;
-				++counts[d];
-				}
+				++counts[g[j + k]];
 			}
 		}
 	return true;
@@ -359,7 +354,31 @@ err run_tests()
 		assert_equal(es, square_digits_used(g, sr, sc));
 		}
 
-	// todo: test valid_solution
+	printf("  test validator\n");
+	const char* solution = "794582136268931745315476982689715324432869571157243869821657493943128657576394218";
+	assert_equal(ERR_NONE, parse_input(solution, g));
+	for (int i = 0 ; i < digit_count ; ++i)
+		{
+		digit d = g[i];
+		digit x = d + 1;
+		if (x > grid_size)
+			x = 1;
+		g[i] = x;
+		assert(!valid_solution(g));
+
+		int j = (i + 7) % digit_count;
+		x = g[j];
+		if (x != d)
+			{
+			g[j] = d;
+			g[i] = x;
+			assert(!valid_solution(g));			
+			}
+		
+		g[i] = d;
+		g[j] = x;
+		}
+	assert(valid_solution(g));
 
 	printf("  test solving sudoku\n");
 	const char* i1 = ".94...13..............76..2.8..1.....32.........2...6.....5.4.......8..7..63.4..8";
