@@ -3,4 +3,6 @@
 *.exe
 *.stackdump
 *.out
-/build/
+sudoku
+test-sudoku*
+prof-sudoku
