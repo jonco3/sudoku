@@ -7,24 +7,25 @@ DEBFLAGS = $(FLAGS) -g -DDEBUG
 RELFLAGS = $(FLAGS) -O3
 PROFFLAGS = $(RELFLAGS) -pg
 
-SRC = src/sudoku.c
-DEP = src/myassert.h
+MAIN_SRC = src/main.c
+TEST_SRC = src/test.c
+DEPS = src/myassert.h
 
-sudoku: $(SRC) $(DEP)
-	$(CC) $(SRC) $(RELFLAGS) -o sudoku
+sudoku: $(MAIN_SRC) $(DEPS)
+	$(CC) $(MAIN_SRC) $(RELFLAGS) -o sudoku
 
-test-sudoku: $(SRC)
-	$(CC) $(SRC) $(DEBFLAGS) -o test-sudoku
+prof-sudoku: $(MAIN_SRC) $(DEPS)
+	$(CC) $(MAIN_SRC) $(PROFFLAGS) -o prof-sudoku
 
-prof-sudoku: $(SRC)
-	$(CC) $(SRC) $(PROFFLAGS) -o prof-sudoku
+test-sudoku: $(TEST_SRC) $(DEPS)
+	$(CC) $(TEST_SRC) $(DEBFLAGS) -o test-sudoku
 
 .PHONY: all
 all: sudoku test-sudoku prof-sudoku
 
 .PHONY: test
 test: test-sudoku
-	gdb -batch -command=debug.commands --args ./test-sudoku -t
+	gdb -batch -command=debug.commands --args ./test-sudoku
 
 .PHONY: clean
 clean:
