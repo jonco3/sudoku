@@ -1,0 +1,11 @@
+Command line sudoku solver
+==========================
+
+I was asked how I might implement a sudoku solver in a job interview and found it an interesting
+problem to think about.  This is an implementation of my ideas in C.
+
+Run "make test" to build and run the tests, "make" to build the main program.
+
+The command accepts strings of 81 characters to specify the problem, and prints the result in the
+same format.  The first 9 represent the 9 columns of the first row, and subsequent rows follow.
+Each character is either a digit of 1 to 9, or a '.' to indicate unknown.
