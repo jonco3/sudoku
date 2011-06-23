@@ -204,24 +204,3 @@ err parse_and_solve(const char* input)
 		printf("failed to solve input\n");
 	return ERR_NONE;
 	}
-
-err run_solver()
-	{
-	const int buffer_size = digit_count + 3;  // data + extra to detect overrun + newline + zero
-	char buffer[buffer_size];
-	
-	for (;;)
-		{
-		char* c = fgets(buffer, buffer_size, stdin);
-		if (!c)
-			return feof(stdin) ? ERR_NONE : ERR_READ_INPUT;
-		if (strlen(buffer) != digit_count + 1)
-			return ERR_BAD_LINE_LENGTH;
-		assert_equal('\n', buffer[digit_count]);
-		buffer[digit_count] = '\0';
-		err r = parse_and_solve(buffer);
-		if (r != ERR_NONE)
-			return r;
-		}
-	return ERR_NONE;
-	}
