@@ -1,4 +1,4 @@
-# hash sudoju puzzles from https://github.com/attractivechaos/plb/blob/master/sudoku/sudoku.txt
+# hard sudoju puzzles from https://github.com/attractivechaos/plb/blob/master/sudoku/sudoku.txt
 
 ..............3.85..1.2.......5.7.....4...1...9.......5......73..2.1........4...9
 .......12........3..23..4....18....5.6..7.8.......9.....85.....9...4.5..47...6...
